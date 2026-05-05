@@ -30,3 +30,25 @@ export {
   buildSsml,
   type AzureTtsProviderOptions,
 } from './azure-tts-provider';
+
+export {
+  NativeTtsProvider,
+  type NativeTtsBridge,
+  type NativeTtsBridgeHandle,
+  type NativeTtsBridgeRequest,
+  type NativeTtsBridgeVoice,
+} from './native-tts-provider';
+
+export {
+  VoiceCatalog,
+  EMBEDDED_VOICES,
+  type CatalogVoice,
+} from './voice-catalog';
+
+export {
+  PlaybackOrchestrator,
+  type TtsPlaybackEvent,
+  type TtsPlaybackListener,
+  type PlaybackOrchestratorOptions,
+  type SynthesisRequest,
+} from './playback-orchestrator';
