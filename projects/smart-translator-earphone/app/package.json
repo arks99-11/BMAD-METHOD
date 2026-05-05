@@ -19,8 +19,9 @@
   "jest": {
     "collectCoverageFrom": [
       "src/core/**/*.ts",
-      "!src/core/**/*.test.ts",
-      "!src/core/**/index.ts",
+      "src/server/**/*.ts",
+      "!src/**/*.test.ts",
+      "!src/**/index.ts",
       "!src/core/audio/expo-audio-capture.ts",
       "!src/core/audio/web-audio-capture.ts",
       "!src/core/audio/platform-audio-factory.ts"
@@ -28,7 +29,8 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "testMatch": [
-      "<rootDir>/src/core/**/*.test.ts"
+      "<rootDir>/src/core/**/*.test.ts",
+      "<rootDir>/src/server/**/*.test.ts"
     ]
   },
   "dependencies": {
