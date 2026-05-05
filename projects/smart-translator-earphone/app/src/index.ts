@@ -4,3 +4,4 @@
  */
 export * from './core/audio';
 export * from './core/stt';
+export * from './core/engine-router';

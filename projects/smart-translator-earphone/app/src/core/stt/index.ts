@@ -47,3 +47,11 @@ export {
   type GoogleSttTransport,
   type RestGoogleSttTransportOptions,
 } from './google-stt-provider';
+
+export {
+  LanguageDetectionPolicy,
+  type DetectionResult,
+  type DetectionResultKind,
+  type DetectionResultListener,
+  type LanguageDetectionPolicyOptions,
+} from './language-detection';
