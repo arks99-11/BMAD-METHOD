@@ -7,7 +7,7 @@ export {
   SETTINGS_KEYS,
   type AppSettings,
   type LanguagesSettings,
-  type VoiceSettings,
+  type VoicePreferences,
   type PrivacySettings,
   type AudioSettings,
   type AccountSettings,

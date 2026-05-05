@@ -15,7 +15,7 @@ import {
   type AudioSettings,
   type LanguagesSettings,
   type PrivacySettings,
-  type VoiceSettings,
+  type VoicePreferences,
 } from './settings-schema';
 
 export type SettingsListener = (settings: AppSettings) => void;
@@ -60,7 +60,7 @@ export class SettingsManager {
     await this.write('languages', this.current.languages);
   }
 
-  async setVoice(patch: Partial<VoiceSettings>): Promise<void> {
+  async setVoice(patch: Partial<VoicePreferences>): Promise<void> {
     this.current = { ...this.current, voice: { ...this.current.voice, ...patch } };
     await this.write('voice', this.current.voice);
   }

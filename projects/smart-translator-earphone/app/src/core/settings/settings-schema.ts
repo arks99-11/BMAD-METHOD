@@ -22,7 +22,15 @@ export interface LanguagesSettings {
   autoLanguageDetect: boolean;
 }
 
-export interface VoiceSettings {
+/**
+ * Voice section of the persisted settings tree.
+ *
+ * Distinct from `VoiceSettings` in `core/tts/voice-settings.ts` which
+ * is the runtime synthesis envelope (gender / speed / pitch passed to
+ * the TTS provider on each call); this type holds the *user
+ * preferences* persisted to the local store.
+ */
+export interface VoicePreferences {
   /** Selected voice id (resolves via VoiceCatalog). */
   voiceId: string;
   /** Speech rate multiplier; 1.0 = vendor default. */
@@ -65,7 +73,7 @@ export interface AccountSettings {
 
 export interface AppSettings {
   languages: LanguagesSettings;
-  voice: VoiceSettings;
+  voice: VoicePreferences;
   privacy: PrivacySettings;
   audio: AudioSettings;
   account: AccountSettings;
