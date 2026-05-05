@@ -29,7 +29,7 @@ All planning artifacts live in [`_bmad-output/`](./_bmad-output/) and were produ
 
 - [`architecture.md`](./_bmad-output/architecture.md) — High-level architecture, component breakdown, deployment topology
 - [`adrs/`](./_bmad-output/adrs/) — Architecture Decision Records (ADR-001 through ADR-005)
-- [`epics-and-stories.md`](./_bmad-output/epics-and-stories.md) — 10 epics, ~45 stories with acceptance criteria
+- [`epics-and-stories.md`](./_bmad-output/epics-and-stories.md) — 10 epics, 55 stories with acceptance criteria
 - [`implementation-readiness-check.md`](./_bmad-output/implementation-readiness-check.md) — Cross-document consistency review
 - [`project-context.md`](./_bmad-output/project-context.md) — Technology stack, conventions, implementation rules for AI agents
 

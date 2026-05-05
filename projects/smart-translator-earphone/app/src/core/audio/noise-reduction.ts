@@ -2,8 +2,11 @@
  * Story 1.4 — Noise reduction primitives.
  *
  * Provides:
- *  - HighPassFilter: 1st-order Butterworth at a configurable cutoff (default
- *    80 Hz) — removes low-frequency rumble, AC hum, breath noise.
+ *  - HighPassFilter: cascaded 1st-order high-pass stages (default 4 stages
+ *    at a 100 Hz cutoff, ≈24 dB/octave) — removes low-frequency rumble,
+ *    AC hum, and breath noise. See the HighPassFilter docstring below for
+ *    the exact transfer function and trade-offs versus an N-th-order
+ *    Butterworth biquad cascade.
  *  - SpectralSubtractionDenoiser: classic spectral subtraction for stationary
  *    background noise. Calibrates from a leading silence segment, then
  *    attenuates the noise floor across subsequent frames.

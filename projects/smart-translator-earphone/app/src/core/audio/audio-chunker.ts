@@ -69,10 +69,16 @@ export class AudioChunker {
   /**
    * Flush any remaining frames as a `final` chunk. After this, the chunker is
    * empty and can be reused for a new session.
+   *
+   * Pass `{ utteranceBoundary: true }` when the flush coincides with the end
+   * of an in-progress utterance (e.g. the pipeline is stopping mid-utterance
+   * and the VAD will emit `utterance-end` for the same frame). This lets a
+   * downstream STT consumer treat the chunk as final-of-stream AND
+   * final-of-utterance in a single event.
    */
-  flushFinal(): void {
+  flushFinal(opts: { utteranceBoundary?: boolean } = {}): void {
     if (this.buffer.length === 0) return;
-    this.flushInternal({ utteranceBoundary: false, final: true });
+    this.flushInternal({ utteranceBoundary: opts.utteranceBoundary === true, final: true });
   }
 
   /** Subscribe to chunk events. Returns an unsubscribe function. */
