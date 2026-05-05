@@ -7,3 +7,4 @@ export * from './core/stt';
 export * from './core/mt';
 export * from './core/tts';
 export * from './core/engine-router';
+export * from './core/session';
