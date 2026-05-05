@@ -3,3 +3,4 @@
  * from here once it is bootstrapped (Phase 4 next sprint).
  */
 export * from './core/audio';
+export * from './core/stt';
