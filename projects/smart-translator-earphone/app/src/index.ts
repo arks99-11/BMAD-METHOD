@@ -22,3 +22,7 @@ export * from './core/store';
 export * from './core/history';
 export * from './core/settings';
 export * from './core/account';
+export * from './core/telemetry';
+export * from './core/crash';
+export * from './core/resilience';
+export * from './core/onboarding';
