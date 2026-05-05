@@ -22,3 +22,5 @@ export * from './core/store';
 export * from './core/history';
 export * from './core/settings';
 export * from './core/account';
+export * from './core/connectivity';
+export * from './core/packs';
