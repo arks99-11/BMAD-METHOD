@@ -22,6 +22,7 @@ import type {
   StateListener,
 } from './audio-capture';
 import { FRAME_SAMPLES, SAMPLE_RATE_HZ, type AudioFrame } from './audio-types';
+import { concatFloat32, downsampleFloat32, floatToInt16 } from './web-audio-utils';
 
 interface WebAudioGlobals {
   AudioContext?: typeof AudioContext;
@@ -30,6 +31,17 @@ interface WebAudioGlobals {
 }
 
 const RESAMPLE_SAMPLE_RATE = SAMPLE_RATE_HZ; // 16000
+
+export interface WebAudioCaptureOptions {
+  /**
+   * The `MediaDeviceInfo.deviceId` to capture from. When omitted the
+   * browser uses its default audio input device. Note that browsers
+   * only return non-empty deviceIds AFTER the user has granted mic
+   * permission at least once — use {@link enumerateAudioInputs} to
+   * fetch the list with labels.
+   */
+  deviceId?: string;
+}
 
 export class WebAudioCaptureProvider implements AudioCaptureProvider {
   private _state: CaptureState = 'idle';
@@ -43,6 +55,15 @@ export class WebAudioCaptureProvider implements AudioCaptureProvider {
   private leftover = new Float32Array(0);
   private seq = 0;
   private startMs = 0;
+
+  constructor(private readonly opts: WebAudioCaptureOptions = {}) {}
+
+  /**
+   * Update the desired input device. Takes effect on the next `start()`.
+   */
+  setDeviceId(deviceId: string | undefined): void {
+    (this.opts as { deviceId?: string }).deviceId = deviceId;
+  }
 
   get state(): CaptureState {
     return this._state;
@@ -59,7 +80,12 @@ export class WebAudioCaptureProvider implements AudioCaptureProvider {
         throw new Error('navigator.mediaDevices.getUserMedia is not available');
       }
       this.context = new Ctx();
-      this.mediaStream = await g.navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioConstraint: MediaTrackConstraints | true = this.opts.deviceId
+        ? { deviceId: { exact: this.opts.deviceId } }
+        : true;
+      this.mediaStream = await g.navigator.mediaDevices.getUserMedia({
+        audio: audioConstraint,
+      });
       this.source = this.context.createMediaStreamSource(this.mediaStream);
       // ScriptProcessorNode is deprecated but universally supported. AudioWorklet
       // would be preferable but requires a separate worklet file which complicates
@@ -144,39 +170,40 @@ export class WebAudioCaptureProvider implements AudioCaptureProvider {
   }
 }
 
-function concatFloat32(a: Float32Array, b: Float32Array): Float32Array {
-  const out = new Float32Array(a.length + b.length);
-  out.set(a, 0);
-  out.set(b, a.length);
-  return out;
+export interface AudioInputDeviceInfo {
+  deviceId: string;
+  /** Human label, e.g. "Built-in Microphone" or "AirPods Pro". May be empty
+   *  before the user has granted mic permission at least once. */
+  label: string;
+  /** Empty for the first device returned by the browser; non-empty for the
+   *  rest. Useful for grouping virtual devices belonging to the same
+   *  physical hardware. */
+  groupId: string;
 }
 
-function downsampleFloat32(input: Float32Array, fromRate: number, toRate: number): Float32Array {
-  if (fromRate === toRate) return input;
-  if (toRate > fromRate) {
-    throw new Error(`Cannot upsample from ${fromRate} to ${toRate}`);
+/**
+ * List the available audio input devices via
+ * `navigator.mediaDevices.enumerateDevices()`. Returns `[]` when the API
+ * is not available or the call fails.
+ *
+ * IMPORTANT: Browsers strip device labels until the user has granted mic
+ * permission at least once. To get useful labels, call `getUserMedia({
+ * audio: true })` once to obtain permission, then call this function.
+ */
+export async function enumerateAudioInputs(): Promise<AudioInputDeviceInfo[]> {
+  const g = globalThis as unknown as WebAudioGlobals;
+  const enumerate = g.navigator?.mediaDevices?.enumerateDevices?.bind(
+    g.navigator.mediaDevices,
+  );
+  if (!enumerate) return [];
+  try {
+    const devices = await enumerate();
+    return devices
+      .filter((d) => d.kind === 'audioinput')
+      .map((d) => ({ deviceId: d.deviceId, label: d.label, groupId: d.groupId }));
+  } catch {
+    return [];
   }
-  const ratio = fromRate / toRate;
-  const outLength = Math.floor(input.length / ratio);
-  const out = new Float32Array(outLength);
-  for (let i = 0; i < outLength; i++) {
-    // Average the input samples that fall into this output sample. This is
-    // a low-pass / box filter; good enough for VAD-quality speech and
-    // dramatically simpler than a polyphase resampler.
-    const start = Math.floor(i * ratio);
-    const end = Math.min(input.length, Math.floor((i + 1) * ratio));
-    let sum = 0;
-    for (let j = start; j < end; j++) sum += input[j]!;
-    out[i] = end > start ? sum / (end - start) : 0;
-  }
-  return out;
 }
 
-function floatToInt16(input: Float32Array): Int16Array {
-  const out = new Int16Array(input.length);
-  for (let i = 0; i < input.length; i++) {
-    const clamped = Math.max(-1, Math.min(1, input[i]!));
-    out[i] = Math.round(clamped * 32767);
-  }
-  return out;
-}
+

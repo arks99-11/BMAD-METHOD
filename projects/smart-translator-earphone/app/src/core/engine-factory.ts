@@ -27,6 +27,7 @@ import { MockTranslationProvider } from './translation/mock-translation-provider
 import { DeeplProvider } from './translation/deepl-provider';
 import { OpenAiTranslationProvider } from './translation/openai-provider';
 import { GoogleTranslateProvider } from './translation/google-translate-provider';
+import { GoogleTranslateFreeProvider } from './translation/google-translate-free-provider';
 import type { TranslationEngineId, TranslationProvider } from './translation/translation-types';
 import { MockTtsProvider } from './tts/mock-tts-provider';
 import { AzureTtsProvider } from './tts/azure-tts-provider';
@@ -105,6 +106,12 @@ function buildTranslationProviders(preferred: TranslationEngineId): TranslationP
     cloud.unshift(picked!);
   }
   providers.push(...cloud);
+  // Free unofficial Google endpoint — no API key required, used as a real
+  // translation fallback before the deterministic Mock provider so the demo
+  // produces real translations out of the box.
+  if (!hasEnv('EXPO_PUBLIC_GOOGLE_CLOUD_API_KEY')) {
+    providers.push(new GoogleTranslateFreeProvider());
+  }
   providers.push(new MockTranslationProvider());
   return providers;
 }

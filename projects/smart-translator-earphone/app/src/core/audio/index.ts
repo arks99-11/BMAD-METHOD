@@ -70,4 +70,26 @@ export {
   assertNever,
 } from './audio-session-types';
 
-export { createAudioCapture, createAudioPlayback } from './platform-audio-factory';
+export {
+  createAudioCapture,
+  createAudioPlayback,
+  createTabAudioCapture,
+  type CreateAudioCaptureOptions,
+} from './platform-audio-factory';
+
+export {
+  enumerateAudioInputs,
+  type AudioInputDeviceInfo,
+  type WebAudioCaptureOptions,
+} from './web-audio-capture';
+
+export {
+  type AudioDeviceMonitor,
+  type AudioDeviceListener,
+  type AudioDeviceSnapshot,
+  type AudioDeviceInfo,
+  type AudioDeviceKind,
+  classifyDeviceLabel,
+  NullAudioDeviceMonitor,
+} from './audio-device-monitor';
+export { WebAudioDeviceMonitor } from './web-audio-device-monitor';

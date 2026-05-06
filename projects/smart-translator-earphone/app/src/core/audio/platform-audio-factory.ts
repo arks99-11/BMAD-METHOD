@@ -33,11 +33,20 @@ function detectPlatformOs(): string | null {
   return cachedPlatformOs;
 }
 
-export function createAudioCapture(): AudioCaptureProvider {
+export interface CreateAudioCaptureOptions {
+  /**
+   * On web, pass through to {@link WebAudioCaptureProvider} so the user
+   * can pick a non-default microphone (e.g. AirPods, USB mic) via
+   * `getUserMedia`. Ignored on native platforms.
+   */
+  deviceId?: string;
+}
+
+export function createAudioCapture(options: CreateAudioCaptureOptions = {}): AudioCaptureProvider {
   const os = detectPlatformOs();
   if (os === 'web') {
     const { WebAudioCaptureProvider } = require('./web-audio-capture');
-    return new WebAudioCaptureProvider();
+    return new WebAudioCaptureProvider({ deviceId: options.deviceId });
   }
   if (os === 'ios' || os === 'android') {
     const { ExpoAudioCaptureProvider } = require('./expo-audio-capture');
@@ -53,4 +62,21 @@ export function createAudioPlayback(): AudioPlaybackProvider {
     return new ExpoAudioPlaybackProvider();
   }
   return new MockAudioPlaybackProvider();
+}
+
+/**
+ * Tab / system audio capture. Web-only: native iOS/Android do not allow
+ * third-party apps to capture system audio (Apple blocks entirely; Android
+ * `AudioPlaybackCapture` requires per-app opt-in and is rarely usable in
+ * practice for streaming apps). On native platforms this returns a Mock
+ * provider so callers can detect "not supported" via a feature check
+ * rather than a runtime crash.
+ */
+export function createTabAudioCapture(): AudioCaptureProvider {
+  const os = detectPlatformOs();
+  if (os === 'web') {
+    const { WebTabAudioCaptureProvider } = require('./web-tab-audio-capture');
+    return new WebTabAudioCaptureProvider();
+  }
+  return new MockAudioCaptureProvider();
 }

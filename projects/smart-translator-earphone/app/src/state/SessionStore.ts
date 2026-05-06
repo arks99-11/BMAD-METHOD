@@ -14,7 +14,11 @@
  */
 
 import { DEFAULT_CONFIG } from '../config/default-config';
-import { createAudioCapture, createAudioPlayback } from '../core/audio/platform-audio-factory';
+import {
+  createAudioCapture,
+  createAudioPlayback,
+  createTabAudioCapture,
+} from '../core/audio/platform-audio-factory';
 import {
   createEngineRouter,
   type EngineFactoryOptions,
@@ -26,6 +30,15 @@ import type { TtsEngineId } from '../core/tts/tts-types';
 import { DEFAULT_VOICE_SETTINGS, type VoiceSettings } from '../core/tts/voice-settings';
 
 export type ConversationMode = 'conversation' | 'lecture';
+
+/**
+ * Source of audio fed into the pipeline.
+ *   - 'mic' (default): the user's microphone (default OS input device).
+ *   - 'tab': another tab/window's audio captured via getDisplayMedia. Web
+ *     only — on native it falls back to a Mock provider so feature
+ *     detection can prevent the option from showing in the UI.
+ */
+export type AudioInputSource = 'mic' | 'tab';
 
 export interface TranscriptEntry {
   id: string;
@@ -53,6 +66,13 @@ export interface PastSession {
 export interface SessionState {
   status: SessionStatus;
   mode: ConversationMode;
+  inputSource: AudioInputSource;
+  /**
+   * The selected microphone deviceId on web. Empty string means "use the
+   * OS default device". Ignored when inputSource is 'tab' or on native
+   * platforms.
+   */
+  micDeviceId: string;
   sourceLang: string | 'auto';
   targetLang: string;
   sttEngine: SttEngineId;
@@ -85,6 +105,8 @@ export class SessionStore {
     this.state = {
       status: 'idle',
       mode: 'conversation',
+      inputSource: 'mic',
+      micDeviceId: '',
       sourceLang: 'auto',
       targetLang: DEFAULT_CONFIG.defaultTargetLang,
       sttEngine: DEFAULT_CONFIG.defaultSttEngine,
@@ -151,6 +173,45 @@ export class SessionStore {
     this.engine?.setSpeakOutput(speak);
   }
 
+  /**
+   * Switch between microphone capture and tab/system-audio capture. The
+   * cached engine is dropped so the next `startSession()` rebuilds it with
+   * the new capture provider.
+   *
+   * Throws if a session is currently active — callers should `stopSession()`
+   * first.
+   */
+  setInputSource(source: AudioInputSource): void {
+    if (this.state.status === 'active' || this.state.status === 'starting') {
+      throw new Error('Stop the current session before changing the input source.');
+    }
+    if (this.state.inputSource === source) return;
+    this.update({ inputSource: source });
+    this.invalidateEngine();
+  }
+
+  /**
+   * Choose which microphone to capture from. Empty string selects the OS
+   * default. Takes effect on the next `startSession()`. Throws if a
+   * session is currently active.
+   */
+  setMicDeviceId(deviceId: string): void {
+    if (this.state.status === 'active' || this.state.status === 'starting') {
+      throw new Error('Stop the current session before changing the microphone.');
+    }
+    if (this.state.micDeviceId === deviceId) return;
+    this.update({ micDeviceId: deviceId });
+    this.invalidateEngine();
+  }
+
+  private invalidateEngine(): void {
+    this.engine = null;
+    if (this.engineUnsubscribe) {
+      this.engineUnsubscribe();
+      this.engineUnsubscribe = null;
+    }
+  }
+
   async startSession(): Promise<void> {
     if (this.state.status === 'active' || this.state.status === 'starting') return;
     sessionCounter += 1;
@@ -198,8 +259,14 @@ export class SessionStore {
   }
 
   private buildEngine(): EngineRouter {
+    const capture =
+      this.state.inputSource === 'tab'
+        ? createTabAudioCapture()
+        : createAudioCapture({
+            deviceId: this.state.micDeviceId || undefined,
+          });
     const opts: EngineFactoryOptions = {
-      capture: createAudioCapture(),
+      capture,
       playback: createAudioPlayback(),
       sourceLang: this.state.sourceLang,
       targetLang: this.state.targetLang,

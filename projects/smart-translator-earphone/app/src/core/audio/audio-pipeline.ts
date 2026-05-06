@@ -104,7 +104,12 @@ export class AudioPipeline {
     // then let the VAD emit any pending utterance-end. Doing it the other
     // way around would route the buffered frames out via markUtteranceBoundary
     // and flushFinal would have nothing to emit.
-    this.chunker.flushFinal();
+    //
+    // When we are mid-utterance at stop time, the final chunk is also at an
+    // utterance boundary (the VAD's about-to-fire utterance-end belongs to
+    // the same frame range). Tag the chunk accordingly so STT consumers can
+    // treat it as both end-of-stream and end-of-utterance.
+    this.chunker.flushFinal({ utteranceBoundary: this.inUtterance });
     this.vad.flush(this.lastFrame);
   }
 

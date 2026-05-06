@@ -147,4 +147,48 @@ describe('AudioPipeline orchestrator (E2E across stories 1.1, 1.2, 1.3, 1.4)', (
     expect(events.some((e) => e.type === 'utterance-end')).toBe(true);
     expect(events.some((e) => e.type === 'chunk' && e.chunk.final)).toBe(true);
   });
+
+  test('stop() mid-utterance tags the final chunk as utterance boundary', async () => {
+    const provider = new MockAudioCaptureProvider();
+    const pipeline = new AudioPipeline(provider, {
+      vad: { minSpeechMs: 40, minSilenceMs: 1000 },
+      chunker: { chunkMs: 300 },
+      highPass: false,
+    });
+    const chunks: Array<{ utteranceBoundary: boolean; final: boolean }> = [];
+    pipeline.on((e) => {
+      if (e.type === 'chunk') chunks.push({ utteranceBoundary: e.chunk.utteranceBoundary, final: e.chunk.final });
+    });
+
+    await pipeline.start();
+    provider.pushSamples(buildSpeechSamples(20, -25));
+    await pipeline.stop();
+
+    const finalChunk = chunks.find((c) => c.final);
+    expect(finalChunk).toBeDefined();
+    expect(finalChunk!.utteranceBoundary).toBe(true);
+  });
+
+  test('stop() outside an utterance leaves the final chunk without an utterance boundary', async () => {
+    const provider = new MockAudioCaptureProvider();
+    const pipeline = new AudioPipeline(provider, {
+      vad: { minSpeechMs: 40, minSilenceMs: 100 },
+      chunker: { chunkMs: 300 },
+      onlyVoicedFramesToChunker: false,
+      highPass: false,
+    });
+    const chunks: Array<{ utteranceBoundary: boolean; final: boolean }> = [];
+    pipeline.on((e) => {
+      if (e.type === 'chunk') chunks.push({ utteranceBoundary: e.chunk.utteranceBoundary, final: e.chunk.final });
+    });
+
+    await pipeline.start();
+    // Pure silence — no utterance ever starts.
+    provider.pushSamples(buildSilenceSamples(20));
+    await pipeline.stop();
+
+    const finalChunk = chunks.find((c) => c.final);
+    expect(finalChunk).toBeDefined();
+    expect(finalChunk!.utteranceBoundary).toBe(false);
+  });
 });
